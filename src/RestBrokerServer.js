@@ -52,6 +52,13 @@ class RestBrokerServer {
 	listen(port) {
 		this.httpServer.listen(port);
 	}
+
+	close() {
+		for (let id in this.connectionsById)
+			this.connectionsById[id].close();
+
+		this.httpServer.close();
+	}
 }
 
 module.exports=RestBrokerServer;

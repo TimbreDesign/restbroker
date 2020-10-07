@@ -7,8 +7,6 @@ class ServerConnection {
 		let params={...querystring.parse(url.parse(req.url).query)};
 		this.id=params.id;
 
-		console.log("Creating server connection: "+this.id);
-
 		this.ws=ws;
 		this.ws.on("message",this.onWsMessage);
 

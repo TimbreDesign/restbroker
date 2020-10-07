@@ -1,22 +1,59 @@
 const WebSocket=require("ws");
 const ClientResponse=require("./ClientResponse");
+const EventEmitter=require("events");
 
-class RestBrokerClient {
+class RestBrokerClient extends EventEmitter {
 	constructor(url, handler) {
-		this.ws=new WebSocket(url);
+		super();
+
 		this.handler=handler;
+		this.url=url;
+		this.reconnectTime=5000;
 
-		this.ws.onopen=()=>{
-			console.log("open..");
-		}
+		this.connect();
+	}
 
+	setReconnectTime(time) {
+		this.reconnectTime=time;
+	}
+
+	connect=()=>{
+		this.ws=new WebSocket(this.url);
+		this.ws.onopen=this.onWsOpen;
 		this.ws.onmessage=this.onWsMessage;
+		this.ws.onclose=this.onWsError;
+		this.ws.onerror=this.onWsError;
+	}
+
+	isConnected() {
+		if (!this.ws)
+			return false;
+
+		if (this.ws.readyState==WebSocket.OPEN)
+			return true;
+
+		return false;
+	}
+
+	onWsOpen=(event)=>{
+		this.emit("stateChange");
+	}
+
+	onWsError=(event)=>{
+		this.ws.onopen=null;
+		this.ws.onmessage=null;
+		this.ws.onclose=null;
+		this.ws.onerror=null;
+		this.ws.close();
+		this.ws=null;
+
+		setTimeout(this.connect,this.reconnectTime);
+
+		this.emit("stateChange");
 	}
 
 	onWsMessage=(event)=>{
 		let message=JSON.parse(event.data);
-
-		console.log(message);
 
 		switch (message._) {
 			case "request":
@@ -27,6 +64,9 @@ class RestBrokerClient {
 	}
 
 	respond(res) {
+		if (!this.ws)
+			return;
+
 		this.ws.send(JSON.stringify({
 			_: "response",
 			uuid: res.uuid,
