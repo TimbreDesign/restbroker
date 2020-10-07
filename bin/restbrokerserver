@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+
+const RestBrokerServer=require("../src/RestBrokerServer.js");
+
