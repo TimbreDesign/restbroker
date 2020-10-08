@@ -3,11 +3,14 @@ const ClientResponse=require("./ClientResponse");
 const EventEmitter=require("events");
 
 class RestBrokerClient extends EventEmitter {
-	constructor(url, handler) {
+	constructor(options) {
 		super();
 
-		this.handler=handler;
-		this.url=url;
+		if (!options.url || !options.handler)
+			throw new Error("Need url and handler");
+
+		this.handler=options.handler;
+		this.url=options.url;
 		this.reconnectTime=5000;
 
 		this.connect();

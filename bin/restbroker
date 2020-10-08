@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+
+const RestBrokerServer=require("../src/RestBrokerServer.js");
+const minimist=require("minimist");
+
+let argv=minimist(process.argv.slice(2));
+
+if (!argv.port) {
+	console.log("Need port!");
+	process.exit();
+}
+
+let server=new RestBrokerServer();
+server.listen(argv.port);
+
+console.log("Listening to port "+argv.port+"...");
