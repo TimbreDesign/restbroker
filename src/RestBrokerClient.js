@@ -21,6 +21,11 @@ class RestBrokerClient extends EventEmitter {
 	}
 
 	connect=()=>{
+		if (this.reconnectTimeout) {
+			clearTimeout(this.reconnectTimeout);
+			this.reconnectTimeout=null;
+		}
+
 		this.ws=new WebSocket(this.url);
 		this.ws.onopen=this.onWsOpen;
 		this.ws.onmessage=this.onWsMessage;
@@ -50,7 +55,7 @@ class RestBrokerClient extends EventEmitter {
 		this.ws.close();
 		this.ws=null;
 
-		setTimeout(this.connect,this.reconnectTime);
+		this.reconnectTimeout=setTimeout(this.connect,this.reconnectTime);
 
 		this.emit("stateChange");
 	}
@@ -75,6 +80,22 @@ class RestBrokerClient extends EventEmitter {
 			uuid: res.uuid,
 			data: res.data
 		}));
+	}
+
+	close() {
+		if (this.reconnectTimeout) {
+			clearTimeout(this.reconnectTimeout);
+			this.reconnectTimeout=null;
+		}
+
+		if (this.ws) {
+			this.ws.onopen=null;
+			this.ws.onmessage=null;
+			this.ws.onclose=null;
+			this.ws.onerror=null;
+			this.ws.close();
+			this.ws=null;
+		}
 	}
 }
 

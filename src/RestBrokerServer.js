@@ -2,9 +2,12 @@ const http=require("http");
 const WebSocket=require("ws");
 const ServerConnection=require("./ServerConnection");
 const url=require("url");
+const EventEmitter=require("events");
 
-class RestBrokerServer {
+class RestBrokerServer extends EventEmitter {
 	constructor() {
+		super();
+
 		this.httpServer=http.createServer(this.onHttpRequest);
 		this.wsServer=new WebSocket.Server({server: this.httpServer});
 
@@ -46,7 +49,24 @@ class RestBrokerServer {
 			return;
 		}
 
-		this.connectionsById[connection.getId()]=connection;
+		let id=connection.getId();
+		if (this.connectionsById[id]) {
+			this.connectionsById[id].off("close",this.onConnectionClose);
+			this.connectionsById[id].close();
+			delete this.connectionsById[id];
+		}
+
+		connection.on("close",this.onConnectionClose);
+		this.connectionsById[id]=connection;
+
+		this.emit("connectionsChange");
+	}
+
+	onConnectionClose=(connection)=>{
+		connection.off("close",this.onConnectionClose);
+		delete this.connectionsById[connection.getId()];
+
+		this.emit("connectionsChange");
 	}
 
 	listen(port) {

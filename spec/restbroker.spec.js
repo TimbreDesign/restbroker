@@ -76,4 +76,64 @@ describe("restbroker", ()=>{
 
 		server.close();
 	});
+
+	it("removes clients on disconnect", async ()=>{
+		let server=new RestBrokerServer();
+		server.listen(PORT);
+
+		let client=new RestBrokerClient({
+			url: "ws://localhost:"+PORT+"/?id=1234",
+			handler: ()=>{}
+		});
+
+		await testutils.waitEvent(client,"stateChange");
+
+		let res=await fetch("http://localhost:"+PORT+"/");
+		let data=JSON.parse(await res.text());
+		expect(data.devices.length).toBe(1);
+
+		client.close();
+
+		await testutils.waitEvent(server,"connectionsChange");
+
+		res=await fetch("http://localhost:"+PORT+"/");
+		data=JSON.parse(await res.text());
+		expect(data.devices.length).toBe(0);
+
+		server.close();
+	});
+
+	it("removes clients on same id", async ()=>{
+		let server=new RestBrokerServer();
+		server.listen(PORT);
+
+		let client1=new RestBrokerClient({
+			url: "ws://localhost:"+PORT+"/?id=1234",
+			handler: ()=>{}
+		});
+
+		let client2=new RestBrokerClient({
+			url: "ws://localhost:"+PORT+"/?id=2345",
+			handler: ()=>{}
+		});
+
+		await testutils.waitEvent(client1,"stateChange");
+		await testutils.waitEvent(client2,"stateChange");
+
+		expect(Object.keys(server.connectionsById).length).toEqual(2);
+
+		let client3=new RestBrokerClient({
+			url: "ws://localhost:"+PORT+"/?id=1234",
+			handler: ()=>{}
+		});
+
+		await testutils.waitEvent(client3,"stateChange");
+
+		expect(Object.keys(server.connectionsById).length).toEqual(2);
+
+		await testutils.waitEvent(client1,"stateChange");
+		expect(client1.isConnected()).toEqual(false);
+
+		server.close();
+	});
 });

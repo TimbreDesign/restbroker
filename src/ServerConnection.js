@@ -1,16 +1,24 @@
 const url=require("url");
 const querystring=require("querystring");
 const uuid=require("uuid");
+const EventEmitter=require("events");
 
-class ServerConnection {
+class ServerConnection extends EventEmitter {
 	constructor(ws, req) {
+		super();
+
 		let params={...querystring.parse(url.parse(req.url).query)};
 		this.id=params.id;
 
 		this.ws=ws;
 		this.ws.on("message",this.onWsMessage);
+		this.ws.on("close",this.onWsClose);
 
 		this.responsesByUuid={};
+	}
+
+	onWsClose=()=>{
+		this.emit("close",this);
 	}
 
 	onWsMessage=(message)=>{

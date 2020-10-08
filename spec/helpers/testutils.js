@@ -4,6 +4,13 @@ function waitEvent(object, event) {
 	});
 }
 
+function delay(millis) {
+	return new Promise((resolve, reject)=>{
+		setTimeout(resolve,millis);
+	});
+}
+
 module.exports={
-	waitEvent
+	waitEvent,
+	delay
 };
