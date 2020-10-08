@@ -6,7 +6,7 @@ const testutils=require("./helpers/testutils");
 describe("restbroker", ()=>{
 	let PORT=12345;
 
-	/*it("can start a server", async ()=>{
+	it("can start a server", async ()=>{
 		let server=new RestBrokerServer();
 		server.listen(PORT);
 
@@ -16,15 +16,15 @@ describe("restbroker", ()=>{
 		expect(data.devices.length).toBe(0);
 
 		server.close();
-	});*/
+	});
 
 	it("routes calls", async ()=>{
 		let server=new RestBrokerServer();
 		server.listen(PORT);
 
-		let handlerSpy=jasmine.createSpy();
+		let reqs=[];
 		function handler(req, res) {
-			handlerSpy();
+			reqs.push(req);
 			res.end("hello world");
 		}
 
@@ -43,12 +43,22 @@ describe("restbroker", ()=>{
 		let u="http://localhost:"+PORT+"/1234/hello/world?a=1&b=2";
 		res=await (await fetch(u)).text();
 		expect(res).toEqual("hello world");
-		expect(handlerSpy).toHaveBeenCalled();
+
+		u="http://localhost:"+PORT+"/1234/hello/world";
+		res=await (await fetch(u)).text();
+		expect(res).toEqual("hello world");
+
+		expect(reqs.length).toEqual(2);
+		//console.log(reqs[0].url);
+		//console.log(reqs[1].url);
+
+		expect(reqs[0].url).toEqual("/hello/world?a=1&b=2");
+		expect(reqs[1].url).toEqual("/hello/world");
 
 		server.close();
 	});
 
-	/*it("reconnects", async ()=>{
+	it("reconnects", async ()=>{
 		function handler(req, res) {
 			res.end("hello world");
 		}
@@ -136,5 +146,5 @@ describe("restbroker", ()=>{
 		expect(client1.isConnected()).toEqual(false);
 
 		server.close();
-	});*/
+	});
 });

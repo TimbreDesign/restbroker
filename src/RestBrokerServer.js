@@ -38,7 +38,8 @@ class RestBrokerServer extends EventEmitter {
 
 			let id=path[0];
 			path=path.slice(1);
-			req.url="/"+path.join("/")+u.search;
+//			req.url="/"+path.join("/")+u.search;
+			req.url="/"+path.join("/")+(u.search?u.search:"");
 
 			//console.log("after: "+req.url);
 
