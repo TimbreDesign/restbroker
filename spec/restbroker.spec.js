@@ -6,7 +6,7 @@ const testutils=require("./helpers/testutils");
 describe("restbroker", ()=>{
 	let PORT=12345;
 
-	it("can start a server", async ()=>{
+	/*it("can start a server", async ()=>{
 		let server=new RestBrokerServer();
 		server.listen(PORT);
 
@@ -16,7 +16,7 @@ describe("restbroker", ()=>{
 		expect(data.devices.length).toBe(0);
 
 		server.close();
-	});
+	});*/
 
 	it("routes calls", async ()=>{
 		let server=new RestBrokerServer();
@@ -40,14 +40,15 @@ describe("restbroker", ()=>{
 		expect(data.devices).toBeInstanceOf(Array);
 		expect(data.devices.length).toBe(1);
 
-		res=await (await fetch("http://localhost:"+PORT+"/1234/")).text();
+		let u="http://localhost:"+PORT+"/1234/hello/world?a=1&b=2";
+		res=await (await fetch(u)).text();
 		expect(res).toEqual("hello world");
 		expect(handlerSpy).toHaveBeenCalled();
 
 		server.close();
 	});
 
-	it("reconnects", async ()=>{
+	/*it("reconnects", async ()=>{
 		function handler(req, res) {
 			res.end("hello world");
 		}
@@ -135,5 +136,5 @@ describe("restbroker", ()=>{
 		expect(client1.isConnected()).toEqual(false);
 
 		server.close();
-	});
+	});*/
 });

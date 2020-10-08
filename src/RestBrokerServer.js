@@ -34,9 +34,13 @@ class RestBrokerServer extends EventEmitter {
 				return;
 			}
 
+			//console.log("before: "+req.url);
+
 			let id=path[0];
 			path=path.slice(1);
-			req.url=path.join("/");
+			req.url="/"+path.join("/")+u.search;
+
+			//console.log("after: "+req.url);
 
 			this.connectionsById[id].handleRequest(req,res);
 		}

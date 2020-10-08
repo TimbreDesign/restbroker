@@ -3,6 +3,9 @@
 const RestBrokerServer=require("../src/RestBrokerServer.js");
 const minimist=require("minimist");
 
+let package=require("../package.json");
+console.log("Restbroker version: "+package.version);
+
 let argv=minimist(process.argv.slice(2));
 
 if (!argv.port) {
