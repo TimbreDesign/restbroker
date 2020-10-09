@@ -14,9 +14,21 @@ class RestBrokerServer extends EventEmitter {
 		this.wsServer.on('connection',this.onWsConnection)
 
 		this.connectionsById={};
+		this.logEnabled=false;
+	}
+
+	setLogEnabled(enabled) {
+		this.logEnabled=enabled;
+	}
+
+	log=(message)=>{
+		if (this.logEnabled)
+			console.log("** rbs: "+message);
 	}
 
 	onHttpRequest=(req, res)=>{
+		this.log("HTTP request: "+req.url);
+
 		let u=url.parse(req.url);
 		let path=u.pathname.split("/").filter(x=>x);
 
@@ -34,21 +46,18 @@ class RestBrokerServer extends EventEmitter {
 				return;
 			}
 
-			//console.log("before: "+req.url);
-
 			let id=path[0];
 			path=path.slice(1);
-//			req.url="/"+path.join("/")+u.search;
 			req.url="/"+path.join("/")+(u.search?u.search:"");
-
-			//console.log("after: "+req.url);
 
 			this.connectionsById[id].handleRequest(req,res);
 		}
 	}
 
 	onWsConnection=(ws, req)=>{
-		let connection=new ServerConnection(ws, req);
+		this.log("WebSocket connection.");
+
+		let connection=new ServerConnection(this, ws, req);
 		if (!connection.getId()) {
 			connection.close();
 			return;
@@ -68,6 +77,8 @@ class RestBrokerServer extends EventEmitter {
 	}
 
 	onConnectionClose=(connection)=>{
+		this.log("WebSocket connection closed.");
+
 		connection.off("close",this.onConnectionClose);
 		delete this.connectionsById[connection.getId()];
 
@@ -76,6 +87,7 @@ class RestBrokerServer extends EventEmitter {
 
 	listen(port) {
 		this.httpServer.listen(port);
+		this.log("Listening to: "+port)
 	}
 
 	close() {

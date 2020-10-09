@@ -4,8 +4,10 @@ const uuid=require("uuid");
 const EventEmitter=require("events");
 
 class ServerConnection extends EventEmitter {
-	constructor(ws, req) {
+	constructor(server, ws, req) {
 		super();
+
+		this.server=server;
 
 		let params={...querystring.parse(url.parse(req.url).query)};
 		this.id=params.id;
@@ -24,7 +26,18 @@ class ServerConnection extends EventEmitter {
 	onWsMessage=(message)=>{
 		let data=JSON.parse(message);
 
-		this.responsesByUuid[data.uuid].end(data.data);
+		switch (data._) {
+			case "response":
+				this.responsesByUuid[data.uuid].end(data.data);
+				delete this.responsesByUuid[data.uuid];
+				break;
+
+			case "ping":
+				this.ws.send(JSON.stringify({
+					_: "pong"
+				}));
+				break;
+		}
 	}
 
 	close() {

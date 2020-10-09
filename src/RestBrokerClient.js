@@ -21,16 +21,28 @@ class RestBrokerClient extends EventEmitter {
 	}
 
 	connect=()=>{
-		if (this.reconnectTimeout) {
-			clearTimeout(this.reconnectTimeout);
-			this.reconnectTimeout=null;
-		}
-
+		this.reset();
 		this.ws=new WebSocket(this.url);
 		this.ws.onopen=this.onWsOpen;
 		this.ws.onmessage=this.onWsMessage;
 		this.ws.onclose=this.onWsError;
 		this.ws.onerror=this.onWsError;
+	}
+
+	reset() {
+		if (this.reconnectTimeout) {
+			clearTimeout(this.reconnectTimeout);
+			this.reconnectTimeout=null;
+		}
+
+		if (this.ws) {
+			this.ws.onopen=null;
+			this.ws.onmessage=null;
+			this.ws.onclose=null;
+			this.ws.onerror=null;
+			this.ws.close();
+			this.ws=null;
+		}
 	}
 
 	isConnected() {
@@ -48,15 +60,8 @@ class RestBrokerClient extends EventEmitter {
 	}
 
 	onWsError=(event)=>{
-		this.ws.onopen=null;
-		this.ws.onmessage=null;
-		this.ws.onclose=null;
-		this.ws.onerror=null;
-		this.ws.close();
-		this.ws=null;
-
+		this.reset();
 		this.reconnectTimeout=setTimeout(this.connect,this.reconnectTime);
-
 		this.emit("stateChange");
 	}
 
@@ -83,19 +88,7 @@ class RestBrokerClient extends EventEmitter {
 	}
 
 	close() {
-		if (this.reconnectTimeout) {
-			clearTimeout(this.reconnectTimeout);
-			this.reconnectTimeout=null;
-		}
-
-		if (this.ws) {
-			this.ws.onopen=null;
-			this.ws.onmessage=null;
-			this.ws.onclose=null;
-			this.ws.onerror=null;
-			this.ws.close();
-			this.ws=null;
-		}
+		this.reset();
 	}
 }
 
