@@ -117,6 +117,7 @@ class RestBrokerClient extends EventEmitter {
 				break;
 
 			case "ping":
+				this.log("ping? pong!");
 				this.ws.send(JSON.stringify({
 					_: "pong"
 				}));

@@ -15,6 +15,8 @@ class RestBrokerServer extends EventEmitter {
 
 		this.connectionsById={};
 		this.logEnabled=false;
+
+		this.delay=5000;
 	}
 
 	setLogEnabled(enabled) {

@@ -17,9 +17,42 @@ class ServerConnection extends EventEmitter {
 		this.ws.on("close",this.onWsClose);
 
 		this.responsesByUuid={};
+		this.pingTimeout=setTimeout(this.onPingTimeout,this.server.delay);
+	}
+
+	onPingTimeout=()=>{
+		this.server.log("sending ping");
+
+		this.pingTimeout=null;
+		this.ws.send(JSON.stringify({
+			_: "ping"
+		}));
+
+		this.pongTimeout=setTimeout(this.onPongTimeout,this.server.delay);
+	}
+
+	onPongTimeout=()=>{
+		this.server.log("pong timeout!");
+
+		this.pongTimeout=null;
+		this.ws.close();
+		this.emit("close",this);
+	}
+
+	reset() {
+		if (this.pingTimeout) {
+			clearTimeout(this.pingTimeout);
+			this.pingTimeout=null;
+		}
+
+		if (this.pongTimeout) {
+			clearTimeout(this.pongTimeout);
+			this.pongTimeout=null;
+		}
 	}
 
 	onWsClose=()=>{
+		this.reset();
 		this.emit("close",this);
 	}
 
@@ -38,10 +71,18 @@ class ServerConnection extends EventEmitter {
 					_: "pong"
 				}));
 				break;
+
+			case "pong":
+				this.server.log("got pong");
+				clearTimeout(this.pongTimeout);
+				this.pongTimeout=null;
+				this.pingTimeout=setTimeout(this.onPingTimeout,this.server.delay);
+				break;
 		}
 	}
 
 	close() {
+		this.reset();
 		this.ws.close();
 	}
 
