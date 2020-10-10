@@ -68,7 +68,7 @@ describe("restbroker", ()=>{
 
 		let url="ws://localhost:"+PORT+"/?id=1234";
 		let client=new RestBrokerClient({url,handler});
-		client.setReconnectTime(100);
+		client.setDelay(100);
 
 		expect(client.isConnected()).toBe(false);
 		await testutils.waitEvent(client,"stateChange");

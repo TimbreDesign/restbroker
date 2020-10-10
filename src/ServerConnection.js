@@ -33,6 +33,7 @@ class ServerConnection extends EventEmitter {
 				break;
 
 			case "ping":
+				this.server.log("ping? pong!");
 				this.ws.send(JSON.stringify({
 					_: "pong"
 				}));

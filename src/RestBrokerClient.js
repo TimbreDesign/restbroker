@@ -11,28 +11,39 @@ class RestBrokerClient extends EventEmitter {
 
 		this.handler=options.handler;
 		this.url=options.url;
-		this.reconnectTime=5000;
+		this.delay=5000;
 
+		this.logEnabled=false;
 		this.connect();
 	}
 
-	setReconnectTime(time) {
-		this.reconnectTime=time;
+	setLogEnabled(enabled) {
+		this.logEnabled=enabled;
 	}
 
-	connect=()=>{
-		this.reset();
-		this.ws=new WebSocket(this.url);
-		this.ws.onopen=this.onWsOpen;
-		this.ws.onmessage=this.onWsMessage;
-		this.ws.onclose=this.onWsError;
-		this.ws.onerror=this.onWsError;
+	log=(message)=>{
+		if (this.logEnabled)
+			console.log("** rbc: "+message);
+	}
+
+	setDelay(time) {
+		this.delay=time;
 	}
 
 	reset() {
 		if (this.reconnectTimeout) {
 			clearTimeout(this.reconnectTimeout);
 			this.reconnectTimeout=null;
+		}
+
+		if (this.pingTimeout) {
+			clearTimeout(this.pingTimeout);
+			this.pingTimeout=null;
+		}
+
+		if (this.pongTimeout) {
+			clearTimeout(this.pongTimeout);
+			this.pongTimeout=null;
 		}
 
 		if (this.ws) {
@@ -55,13 +66,44 @@ class RestBrokerClient extends EventEmitter {
 		return false;
 	}
 
+	connect=()=>{
+		this.log("Connecting client");
+		this.reset();
+		this.ws=new WebSocket(this.url);
+		this.ws.onopen=this.onWsOpen;
+		this.ws.onmessage=this.onWsMessage;
+		this.ws.onclose=this.onWsError;
+		this.ws.onerror=this.onWsError;
+
+		this.pingTimeout=setTimeout(this.onPingTimeout,this.delay);
+	}
+
+	onPingTimeout=()=>{
+		this.log("Sending ping.");
+		this.pingTimeout=null;
+		this.ws.send(JSON.stringify({
+			_: "ping"
+		}));
+
+		this.pongTimeout=setTimeout(this.onPongTimeout,this.delay);
+	}
+
 	onWsOpen=(event)=>{
+		this.log("Connection open!");
 		this.emit("stateChange");
 	}
 
 	onWsError=(event)=>{
 		this.reset();
-		this.reconnectTimeout=setTimeout(this.connect,this.reconnectTime);
+		this.reconnectTimeout=setTimeout(this.connect,this.delay);
+		this.emit("stateChange");
+	}
+
+	onPongTimeout=()=>{
+		this.log("Got no pong, will reconect...");
+		this.pongTimeout=null;
+		this.reset();
+		this.reconnectTimeout=setTimeout(this.connect,this.delay);
 		this.emit("stateChange");
 	}
 
@@ -72,6 +114,19 @@ class RestBrokerClient extends EventEmitter {
 			case "request":
 				let res=new ClientResponse(this,message.uuid);
 				this.handler(message.req,res);
+				break;
+
+			case "ping":
+				this.ws.send(JSON.stringify({
+					_: "pong"
+				}));
+				break;
+
+			case "pong":
+				this.log("Got pong!");
+				clearTimeout(this.pongTimeout);
+				this.pongTimeout=null;
+				this.pingTimeout=setTimeout(this.onPingTimeout,this.delay);
 				break;
 		}
 	}

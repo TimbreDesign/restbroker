@@ -6,3 +6,8 @@ let c=new Client({
 		res.end("hello world this is data..");
 	}
 });
+
+c.setLogEnabled(true);
+c.on("stateChange",()=>{
+	console.log("Client conected: "+c.isConnected());
+});
