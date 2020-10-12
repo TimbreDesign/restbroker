@@ -3,6 +3,7 @@ const WebSocket=require("ws");
 const ServerConnection=require("./ServerConnection");
 const url=require("url");
 const EventEmitter=require("events");
+const restbrokerPackage=require("../package.json");
 
 class RestBrokerServer extends EventEmitter {
 	constructor() {
@@ -36,7 +37,8 @@ class RestBrokerServer extends EventEmitter {
 
 		if (path.length==0) {
 			let response={
-				devices: Object.keys(this.connectionsById)
+				devices: Object.keys(this.connectionsById),
+				restbrokerVersion: restbrokerPackage.version
 			};
 
 			res.end(JSON.stringify(response,null,2)+"\n");
