@@ -74,8 +74,6 @@ class RestBrokerClient extends EventEmitter {
 		this.ws.onmessage=this.onWsMessage;
 		this.ws.onclose=this.onWsError;
 		this.ws.onerror=this.onWsError;
-
-		this.pingTimeout=setTimeout(this.onPingTimeout,this.delay);
 	}
 
 	onPingTimeout=()=>{
@@ -90,6 +88,7 @@ class RestBrokerClient extends EventEmitter {
 
 	onWsOpen=(event)=>{
 		this.log("Connection open!");
+		this.pingTimeout=setTimeout(this.onPingTimeout,this.delay);
 		this.emit("stateChange");
 	}
 
