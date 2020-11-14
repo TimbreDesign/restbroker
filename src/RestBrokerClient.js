@@ -3,18 +3,20 @@ const ClientResponse=require("./ClientResponse");
 const EventEmitter=require("events");
 
 class RestBrokerClient extends EventEmitter {
-	constructor(options) {
+	constructor(handler) {
 		super();
 
-		if (!options.url || !options.handler)
-			throw new Error("Need url and handler");
-
-		this.handler=options.handler;
-		this.url=options.url;
+		this.handler=handler;
 		this.delay=5000;
-
 		this.logEnabled=false;
-		this.connect();
+	}
+
+	setId(id) {
+		this.id=id;
+	}
+
+	setKey(key) {
+		this.key=key;
 	}
 
 	setLogEnabled(enabled) {
@@ -66,10 +68,25 @@ class RestBrokerClient extends EventEmitter {
 		return false;
 	}
 
-	connect=()=>{
-		this.log("Connecting client");
+	connect=(url)=>{
+		if (url)
+			this.url=url;
+
+		if (!this.url)
+			throw new Error("Need url to connect to.");
+
+		if (!this.id)
+			throw new Error("Need an id to connect.");
+
+		let connectUrl=new URL(this.url);
+		connectUrl.searchParams.set("--X-Client-Id",this.id);
+
+		if (this.key)
+			connectUrl.searchParams.set("--X-Api-Key",this.key);
+
+		this.log("Connecting client to: "+connectUrl.toString());
 		this.reset();
-		this.ws=new WebSocket(this.url);
+		this.ws=new WebSocket(connectUrl);
 		this.ws.onopen=this.onWsOpen;
 		this.ws.onmessage=this.onWsMessage;
 		this.ws.onclose=this.onWsError;

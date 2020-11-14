@@ -9,15 +9,23 @@ console.log("Restbroker version: "+package.version);
 let argv=minimist(process.argv.slice(2));
 
 if (!argv.port) {
-	console.log("Need port!");
+	console.log("Usage: restbroker <options>");
+	console.log("Options:")
+	console.log();
+	console.log("  --port=<port>  - Set listen port (required).");
+	console.log("  --key=<key>    - Require X-Api-Key header for clients and REST requests.");
+	console.log("  --log          - Enable logging.");
+	console.log();
 	process.exit();
 }
 
 let server=new RestBrokerServer();
 
-if (argv.log) {
+if (argv.log)
 	server.setLogEnabled(argv.log);
-}
+
+if (argv.key)
+	server.setKey(argv.key);
 
 server.listen(argv.port);
 

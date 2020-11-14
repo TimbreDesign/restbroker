@@ -20,6 +20,10 @@ class RestBrokerServer extends EventEmitter {
 		this.delay=5000;
 	}
 
+	setKey(key) {
+		this.key=key;
+	}
+
 	setLogEnabled(enabled) {
 		this.logEnabled=enabled;
 	}
@@ -34,6 +38,13 @@ class RestBrokerServer extends EventEmitter {
 
 		let u=url.parse(req.url);
 		let path=u.pathname.split("/").filter(x=>x);
+
+		if (this.key && req.headers["x-api-key"]!=this.key) {
+			res.statusCode=403;
+			res.statusMessage="Bad api key.";
+			res.end("Not authorized.");
+			return;
+		}
 
 		if (path.length==0) {
 			let response={
@@ -63,6 +74,13 @@ class RestBrokerServer extends EventEmitter {
 
 		let connection=new ServerConnection(this, ws, req);
 		if (!connection.getId()) {
+			this.log("Connection doesn't have an id, closing");
+			connection.close();
+			return;
+		}
+
+		if (this.key && connection.getKey()!=this.key) {
+			this.log("Bad api key, closing.");
 			connection.close();
 			return;
 		}

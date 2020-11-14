@@ -8,9 +8,11 @@ class ServerConnection extends EventEmitter {
 		super();
 
 		this.server=server;
+		//console.log(req.headers);
 
 		let params={...querystring.parse(url.parse(req.url).query)};
-		this.id=params.id;
+		this.id=params["--X-Client-Id"];
+		this.key=params["--X-Api-Key"];
 
 		this.ws=ws;
 		this.ws.on("message",this.onWsMessage);
@@ -88,6 +90,10 @@ class ServerConnection extends EventEmitter {
 
 	getId() {
 		return this.id;
+	}
+
+	getKey() {
+		return this.key;
 	}
 
 	handleRequest(req, res) {

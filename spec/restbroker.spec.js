@@ -20,6 +20,7 @@ describe("restbroker", ()=>{
 
 	it("routes calls", async ()=>{
 		let server=new RestBrokerServer();
+		//server.setLogEnabled(true);
 		server.listen(PORT);
 
 		let reqs=[];
@@ -28,8 +29,10 @@ describe("restbroker", ()=>{
 			res.end("hello world");
 		}
 
-		let url="ws://localhost:"+PORT+"/?id=1234";
-		let client=new RestBrokerClient({url,handler});
+		let client=new RestBrokerClient(handler);
+		//client.setLogEnabled(true);
+		client.setId("1234");
+		client.connect("ws://localhost:"+PORT);
 
 		expect(client.isConnected()).toBe(false);
 		await testutils.waitEvent(client,"stateChange");
@@ -66,9 +69,10 @@ describe("restbroker", ()=>{
 		let server=new RestBrokerServer();
 		server.listen(PORT);
 
-		let url="ws://localhost:"+PORT+"/?id=1234";
-		let client=new RestBrokerClient({url,handler});
+		let client=new RestBrokerClient(handler);
+		client.setId("1234");
 		client.setDelay(100);
+		client.connect("ws://localhost:"+PORT);
 
 		expect(client.isConnected()).toBe(false);
 		await testutils.waitEvent(client,"stateChange");
@@ -92,10 +96,9 @@ describe("restbroker", ()=>{
 		let server=new RestBrokerServer();
 		server.listen(PORT);
 
-		let client=new RestBrokerClient({
-			url: "ws://localhost:"+PORT+"/?id=1234",
-			handler: ()=>{}
-		});
+		let client=new RestBrokerClient(()=>{});
+		client.setId("1234");
+		client.connect("ws://localhost:"+PORT);
 
 		await testutils.waitEvent(client,"stateChange");
 
@@ -114,29 +117,26 @@ describe("restbroker", ()=>{
 		server.close();
 	});
 
-	it("removes clients on same id", async ()=>{
+	it("removes clients with the same id", async ()=>{
 		let server=new RestBrokerServer();
 		server.listen(PORT);
 
-		let client1=new RestBrokerClient({
-			url: "ws://localhost:"+PORT+"/?id=1234",
-			handler: ()=>{}
-		});
+		let client1=new RestBrokerClient(()=>{});
+		client1.setId("1234");
+		client1.connect("ws://localhost:"+PORT);
 
-		let client2=new RestBrokerClient({
-			url: "ws://localhost:"+PORT+"/?id=2345",
-			handler: ()=>{}
-		});
+		let client2=new RestBrokerClient(()=>{});
+		client2.setId("2345");
+		client2.connect("ws://localhost:"+PORT);
 
 		await testutils.waitEvent(client1,"stateChange");
 		await testutils.waitEvent(client2,"stateChange");
 
 		expect(Object.keys(server.connectionsById).length).toEqual(2);
 
-		let client3=new RestBrokerClient({
-			url: "ws://localhost:"+PORT+"/?id=1234",
-			handler: ()=>{}
-		});
+		let client3=new RestBrokerClient(()=>{});
+		client3.setId("1234");
+		client3.connect("ws://localhost:"+PORT);
 
 		await testutils.waitEvent(client3,"stateChange");
 
@@ -144,6 +144,51 @@ describe("restbroker", ()=>{
 
 		await testutils.waitEvent(client1,"stateChange");
 		expect(client1.isConnected()).toEqual(false);
+
+		server.close();
+	});
+
+	it("can require a key for http requests", async ()=>{
+		let server=new RestBrokerServer();
+		server.setKey("qwerty");
+		//server.setLogEnabled(true);
+		server.listen(PORT);
+
+		let res=await fetch("http://localhost:"+PORT+"/");
+		expect(await res.text()).toEqual("Not authorized.");
+		expect(res.status).toEqual(403);
+
+		let res2=await fetch("http://localhost:"+PORT+"/",{
+			headers: {
+				"X-Api-Key": "qwerty"
+			}
+		});
+		expect(res2.status).toEqual(200);
+		let data=JSON.parse(await res2.text());
+		expect(data.devices).toBeInstanceOf(Array);
+		expect(data.devices.length).toBe(0);
+
+		server.close();
+	});
+
+	it("can require a key client connects", async ()=>{
+		let server=new RestBrokerServer();
+		server.setKey("qwerty");
+		server.setLogEnabled(true);
+		server.listen(PORT);
+
+		let client1=new RestBrokerClient(()=>{});
+		client1.setId("1234");
+		client1.connect("ws://localhost:"+PORT);
+		await testutils.waitEvent(client1,"stateChange");
+		expect(Object.keys(server.connectionsById).length).toEqual(0);
+
+		let client2=new RestBrokerClient(()=>{});
+		client2.setKey("qwerty");
+		client2.setId("1234");
+		client2.connect("ws://localhost:"+PORT);
+		await testutils.waitEvent(client1,"stateChange");
+		expect(Object.keys(server.connectionsById).length).toEqual(1);
 
 		server.close();
 	});
