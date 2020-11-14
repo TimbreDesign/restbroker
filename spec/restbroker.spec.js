@@ -174,7 +174,7 @@ describe("restbroker", ()=>{
 	it("can require a key client connects", async ()=>{
 		let server=new RestBrokerServer();
 		server.setKey("qwerty");
-		server.setLogEnabled(true);
+		//server.setLogEnabled(true);
 		server.listen(PORT);
 
 		let client1=new RestBrokerClient(()=>{});
